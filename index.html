@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Free Earn - Telegram Mini App</title>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --tg-theme-bg-color: #0f172a;
+            --tg-theme-text-color: #ffffff;
+            --tg-theme-button-color: #3b82f6;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-secondary-bg-color: #1e293b;
+            --primary-glow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+        body {
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+        }
+        .nav-item.active {
+            color: #3b82f6;
+            transform: translateY(-5px);
+            text-shadow: var(--primary-glow);
+        }
+        .nav-item { transition: all 0.3s ease; }
+        
+        /* Spin Wheel Styles */
+        .wheel-container { position: relative; width: 280px; height: 280px; margin: 0 auto; }
+        #spinWheel, #autoSpinWheel { width: 100%; height: 100%; border-radius: 50%; border: 4px solid #3b82f6; box-shadow: var(--primary-glow); transition: transform 3s cubic-bezier(0.25, 0.1, 0.25, 1); }
+        .wheel-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); z-index: 10; font-size: 30px; color: #ef4444; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+        
+        /* Responsive Banner scaling for 728x90 on mobile */
+        .banner-1-container {
+            width: 100%;
+            height: 90px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            margin: 15px 0;
+            background: #1e293b;
+            border-radius: 8px;
+        }
+        @media (max-width: 768px) {
+            .banner-1-wrapper {
+                transform: scale(0.48); /* Scales down 728px to fit ~350px mobile screen */
+                transform-origin: center;
+                width: 728px;
+                height: 90px;
+                display: flex;
+                justify-content: center;
+            }
+        }
+        
+        .banner-2-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 5px 0;
+        }
+
+        /* Pages */
+        .page { display: none; padding-bottom: 80px; animation: fadeIn 0.4s; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* Utility */
+        .neon-text { text-shadow: 0 0 10px rgba(59, 130, 246, 0.8); }
+        .btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); border: none; box-shadow: var(--primary-glow); transition: transform 0.1s; }
+        .btn-primary:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="min-h-screen relative">
+
+    <!-- Top Header -->
+    <header class="glass-panel m-4 p-4 flex justify-between items-center sticky top-4 z-40">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="alert('Profile: ' + UserData.name + '\nID: ' + UserData.id)">
+            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-xl font-bold shadow-lg">
+                <i class="fa-solid fa-user"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400">Welcome</p>
+                <p class="font-bold text-sm" id="userNameDisplay">User</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-full border border-slate-600">
+            <i class="fa-solid fa-coins text-yellow-400"></i>
+            <span id="userBalance" class="font-bold neon-text">0</span>
+        </div>
+    </header>
+
+    <!-- PAGE 1: HOME -->
+    <div id="homePage" class="page active px-4">
+        
+        <!-- Adsterra Native Banner-1 -->
+        <div class="banner-1-container">
+            <div class="banner-1-wrapper">
+                <script type="text/javascript">
+                  atOptions = {
+                    'key' : 'fc1f5eaa03bb67a743c0e612bcf0397a',
+                    'format' : 'iframe',
+                    'height' : 90,
+                    'width' : 728,
+                    'params' : {}
+                  };
+                </script>
+                <script type="text/javascript" src="https://www.highperformanceformat.com/fc1f5eaa03bb67a743c0e612bcf0397a/invoke.js"></script>
+            </div>
+        </div>
+        
+        <!-- Manual Spin Wheel -->
+        <div class="glass-panel p-6 mb-6 text-center">
+            <h2 class="text-xl font-bold mb-4 text-blue-400">Lucky Spin (Manual)</h2>
+            <div class="wheel-container mb-6">
+                <i class="fa-solid fa-caret-down wheel-pointer"></i>
+                <canvas id="spinWheel" width="280" height="280"></canvas>
+            </div>
+            <p class="text-sm text-gray-400 mb-2">Spins left: <span id="manualSpinsLeft">21</span> / 4h</p>
+            <button id="btnManualSpin" class="btn-primary w-full py-3 rounded-xl font-bold text-lg" onclick="startManualSpin()">
+                SPIN <span id="manualSpinCost" class="text-xs ml-1">(Free)</span>
+            </button>
+            <button id="btnManualClaim" class="bg-green-500 w-full py-3 rounded-xl font-bold text-lg mt-3 hidden shadow-[0_0_15px_rgba(34,197,94,0.5)]" onclick="claimManualSpin()">
+                CLAIM REWARD
+            </button>
+        </div>
+
+        <!-- Adsterra Native Banner-1 -->
+        <div class="banner-1-container">
+            <div class="banner-1-wrapper">
+                <script type="text/javascript">
+                  atOptions = {
+                    'key' : 'fc1f5eaa03bb67a743c0e612bcf0397a',
+                    'format' : 'iframe',
+                    'height' : 90,
+                    'width' : 728,
+                    'params' : {}
+                  };
+                </script>
+                <script type="text/javascript" src="https://www.highperformanceformat.com/fc1f5eaa03bb67a743c0e612bcf0397a/invoke.js"></script>
+            </div>
+        </div>
+
+        <!-- Daily Reward -->
+        <div class="glass-panel p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4 text-yellow-400 flex items-center gap-2"><i class="fa-solid fa-calendar-check"></i> Daily Rewards</h2>
+            <div class="grid grid-cols-4 gap-2 mb-4 text-center text-xs" id="dailyRewardsGrid">
+                <!-- Populated by JS -->
+            </div>
+            <button id="btnDailyClaim" class="btn-primary w-full py-3 rounded-xl font-bold" onclick="claimDailyReward()">Claim Today's Reward</button>
+        </div>
+
+        <!-- Auto Spin Wheel -->
+        <div class="glass-panel p-6 mb-6 text-center border-purple-500/30 border-2">
+            <h2 class="text-xl font-bold mb-4 text-purple-400 flex items-center justify-center gap-2"><i class="fa-solid fa-bolt"></i> Auto Spin</h2>
+            <div class="wheel-container mb-6">
+                <i class="fa-solid fa-caret-down wheel-pointer"></i>
+                <canvas id="autoSpinWheel" width="280" height="280"></canvas>
+            </div>
+            <p class="text-sm text-gray-400 mb-2">Spins left: <span id="autoSpinsLeft">21</span> / 4h</p>
+            <div class="flex gap-3">
+                <button id="btnAutoSpinStart" class="btn-primary flex-1 py-3 rounded-xl font-bold" onclick="startAutoSpin()">START AUTO</button>
+                <button id="btnAutoSpinStop" class="bg-red-500 flex-1 py-3 rounded-xl font-bold hidden shadow-[0_0_15px_rgba(239,68,68,0.5)]" onclick="stopAutoSpin()">STOP</button>
+            </div>
+            <p class="text-xs text-gray-400 mt-3">Watch ads automatically to earn.</p>
+        </div>
+        
+        <!-- Adsterra Native Banner-2 -->
+        <div class="banner-2-container">
+            <script type="text/javascript">
+              atOptions = {
+                'key' : 'b301e9e298a7004777ddcb58245aa4fa',
+                'format' : 'iframe',
+                'height' : 250,
+                'width' : 300,
+                'params' : {}
+              };
+            </script>
+            <script type="text/javascript" src="https://www.highperformanceformat.com/b301e9e298a7004777ddcb58245aa4fa/invoke.js"></script>
+        </div>
+    </div>
+
+    <!-- PAGE 2: TASKS -->
+    <div id="tasksPage" class="page px-4">
+        <div class="banner-1-container">
+            <div class="banner-1-wrapper">
+                <script type="text/javascript">
+                  atOptions = {
+                    'key' : 'fc1f5eaa03bb67a743c0e612bcf0397a',
+                    'format' : 'iframe',
+                    'height' : 90,
+                    'width' : 728,
+                    'params' : {}
+                  };
+                </script>
+                <script type="text/javascript" src="https://www.highperformanceformat.com/fc1f5eaa03bb67a743c0e612bcf0397a/invoke.js"></script>
+            </div>
+        </div>
+
+        <h2 class="text-2xl font-bold mb-4 ml-2">Earn More Coins</h2>
+        <p class="text-sm text-gray-400 ml-2 mb-4">Tasks limit: <span id="tasksLeft">20</span> left for next 4 hours.</p>
+        
+        <div class="flex flex-col gap-3" id="taskListContainer">
+            <!-- Populated by JS -->
+        </div>
+        
+        <div class="banner-2-container mt-6">
+            <script type="text/javascript">
+              atOptions = {
+                'key' : 'b301e9e298a7004777ddcb58245aa4fa',
+                'format' : 'iframe',
+                'height' : 250,
+                'width' : 300,
+                'params' : {}
+              };
+            </script>
+            <script type="text/javascript" src="https://www.highperformanceformat.com/b301e9e298a7004777ddcb58245aa4fa/invoke.js"></script>
+        </div>
+    </div>
+
+    <!-- PAGE 3: REFERRAL -->
+    <div id="referralPage" class="page px-4">
+        <div class="banner-1-container">
+            <div class="banner-1-wrapper">
+                <script type="text/javascript">
+                  atOptions = {
+                    'key' : 'fc1f5eaa03bb67a743c0e612bcf0397a',
+                    'format' : 'iframe',
+                    'height' : 90,
+                    'width' : 728,
+                    'params' : {}
+                  };
+                </script>
+                <script type="text/javascript" src="https://www.highperformanceformat.com/fc1f5eaa03bb67a743c0e612bcf0397a/invoke.js"></script>
+            </div>
+        </div>
+        
+        <div class="glass-panel p-6 text-center mb-6 mt-4">
+            <div class="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-500">
+                <i class="fa-solid fa-users text-4xl text-blue-400"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">Invite Friends</h2>
+            <p class="text-gray-300 mb-6">Earn <span class="text-yellow-400 font-bold">400 Coins</span> for each friend who joins!</p>
+            
+            <div class="bg-slate-800 p-3 rounded-lg flex items-center justify-between mb-4 border border-slate-600">
+                <span id="refLink" class="text-xs text-gray-400 truncate mr-2">t.me/FreeEarnBot?start=...</span>
+                <button class="bg-blue-600 px-4 py-2 rounded text-sm font-bold" onclick="copyRefLink()">COPY</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="glass-panel p-4 text-center border-l-4 border-blue-500">
+                <p class="text-gray-400 text-sm">Friends</p>
+                <p class="text-2xl font-bold" id="refCount">0</p>
+            </div>
+            <div class="glass-panel p-4 text-center border-l-4 border-yellow-500">
+                <p class="text-gray-400 text-sm">Earned</p>
+                <p class="text-2xl font-bold text-yellow-400" id="refEarned">0</p>
+            </div>
+        </div>
+        
+        <div class="banner-2-container">
+            <script type="text/javascript">
+              atOptions = {
+                'key' : 'b301e9e298a7004777ddcb58245aa4fa',
+                'format' : 'iframe',
+                'height' : 250,
+                'width' : 300,
+                'params' : {}
+              };
+            </script>
+            <script type="text/javascript" src="https://www.highperformanceformat.com/b301e9e298a7004777ddcb58245aa4fa/invoke.js"></script>
+        </div>
+    </div>
+
+    <!-- PAGE 4: WALLET -->
+    <div id="walletPage" class="page px-4">
+        <div class="banner-1-container">
+            <div class="banner-1-wrapper">
+                <script type="text/javascript">
+                  atOptions = {
+                    'key' : 'fc1f5eaa03bb67a743c0e612bcf0397a',
+                    'format' : 'iframe',
+                    'height' : 90,
+                    'width' : 728,
+                    'params' : {}
+                  };
+                </script>
+                <script type="text/javascript" src="https://www.highperformanceformat.com/fc1f5eaa03bb67a743c0e612bcf0397a/invoke.js"></script>
+            </div>
+        </div>
+        
+        <div class="glass-panel p-6 mb-6 text-center relative overflow-hidden mt-4">
+            <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-500 rounded-full blur-3xl opacity-20"></div>
+            <p class="text-gray-400 text-sm mb-1">Total Balance</p>
+            <h2 class="text-4xl font-bold text-yellow-400 mb-2"><span id="walletBalance">0</span></h2>
+            <p class="text-xs text-gray-500">~ <span id="walletFiat">0.00</span> BDT</p>
+        </div>
+
+        <div class="glass-panel p-5 mb-6">
+            <h3 class="font-bold text-lg mb-4 border-b border-slate-600 pb-2">Withdraw Funds</h3>
+            <p class="text-xs text-gray-400 mb-4">Min: 10,000,000 Coins = 10,000 BDT / 1 USDT.</p>
+            
+            <div class="space-y-4 mb-4">
+                <div>
+                    <label class="text-xs text-gray-400">Method</label>
+                    <select class="w-full bg-slate-800 p-3 rounded-lg border border-slate-600 mt-1 outline-none">
+                        <option>bKash</option>
+                        <option>Nagad</option>
+                        <option>USDT (TRC20)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400">Account / Address</label>
+                    <input type="text" placeholder="Enter number or address" class="w-full bg-slate-800 p-3 rounded-lg border border-slate-600 mt-1 outline-none">
+                </div>
+            </div>
+
+            <div class="bg-slate-800 p-3 rounded-lg mb-4 text-sm">
+                <p class="mb-2 font-bold text-xs text-blue-400">Requirements:</p>
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-gray-300 text-xs">Watch Ads (10)</span>
+                    <span class="text-xs" id="wdAdStatus">0/10</span>
+                </div>
+                <div class="w-full bg-slate-700 h-1.5 rounded-full mb-3"><div class="bg-blue-500 h-1.5 rounded-full" id="wdAdBar" style="width:0%"></div></div>
+                
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-gray-300 text-xs">Referrals (Min 7)</span>
+                    <span class="text-xs" id="wdRefStatus">0/7</span>
+                </div>
+                <div class="w-full bg-slate-700 h-1.5 rounded-full"><div class="bg-green-500 h-1.5 rounded-full" id="wdRefBar" style="width:0%"></div></div>
+            </div>
+
+            <button class="w-full bg-slate-600 text-gray-300 py-3 rounded-xl font-bold cursor-not-allowed" id="btnWithdraw" onclick="processWithdraw()">Watch Ads to Unlock</button>
+        </div>
+
+        <div class="glass-panel p-5 mb-6">
+            <h3 class="font-bold text-lg mb-4 border-b border-slate-600 pb-2">Exchange Coins</h3>
+            <button class="btn-primary w-full py-3 rounded-xl font-bold" onclick="startExchange()">Exchange Now (Needs 5 Ads)</button>
+        </div>
+
+        <div class="banner-2-container mb-12">
+            <script type="text/javascript">
+              atOptions = {
+                'key' : 'b301e9e298a7004777ddcb58245aa4fa',
+                'format' : 'iframe',
+                'height' : 250,
+                'width' : 300,
+                'params' : {}
+              };
+            </script>
+            <script type="text/javascript" src="https://www.highperformanceformat.com/b301e9e298a7004777ddcb58245aa4fa/invoke.js"></script>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 w-full glass-panel rounded-t-2xl border-b-0 border-x-0 rounded-b-none p-2 z-50">
+        <ul class="flex justify-around items-center h-14">
+            <li class="nav-item active flex flex-col items-center gap-1 cursor-pointer w-16" onclick="switchTab('home')">
+                <i class="fa-solid fa-house text-xl"></i>
+                <span class="text-[10px] font-medium">Home</span>
+            </li>
+            <li class="nav-item flex flex-col items-center gap-1 cursor-pointer w-16" onclick="switchTab('tasks')">
+                <i class="fa-solid fa-list-check text-xl"></i>
+                <span class="text-[10px] font-medium">Tasks</span>
+            </li>
+            <li class="nav-item flex flex-col items-center gap-1 cursor-pointer w-16" onclick="switchTab('referral')">
+                <i class="fa-solid fa-user-plus text-xl"></i>
+                <span class="text-[10px] font-medium">Referral</span>
+            </li>
+            <li class="nav-item flex flex-col items-center gap-1 cursor-pointer w-16" onclick="switchTab('wallet')">
+                <i class="fa-solid fa-wallet text-xl"></i>
+                <span class="text-[10px] font-medium">Wallet</span>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Fullscreen Ad Modal Overlay with Iframe -->
+    <div id="adModal" class="fixed inset-0 z-[100] hidden flex-col bg-black">
+        <!-- Top Dialog Box / Header -->
+        <div class="h-14 bg-slate-800 border-b border-slate-600 flex justify-between items-center px-4 w-full shadow-lg">
+            <div class="flex items-center gap-3">
+                <span id="adSequenceText" class="text-[10px] text-yellow-400 bg-slate-700 px-2 py-1 rounded hidden font-bold">Ad 1 of 2</span>
+                <span class="text-sm font-bold text-white">Wait <span id="adTimer" class="text-blue-400 text-xl mx-1">10</span>s</span>
+            </div>
+            <!-- Cross Button (❎) -->
+            <button class="w-8 h-8 flex justify-center items-center rounded-full bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition" onclick="cancelAd()">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+        <!-- Iframe Container to Load Adsterra-A / B Links -->
+        <div class="flex-1 w-full bg-white relative">
+            <iframe id="adIframe" src="" class="w-full h-full border-0"></iframe>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // Direct Adsterra Links
+        const AD_LINKS = {
+            "A": "https://www.effectivecpmnetwork.com/b49wfbgj?key=a3d814e1bc4233b2b76f0494ff8f0b15",
+            "B": "https://omg10.com/4/11012360"
+        };
+
+        const tg = window.Telegram ? window.Telegram.WebApp : null;
+        if(tg && tg.initDataUnsafe && tg.initDataUnsafe.user) tg.expand();
+
+        const defaultState = {
+            id: (tg && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : Math.floor(Math.random()*1000000),
+            name: (tg && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.first_name : "Demo User",
+            balance: 0,
+            manualSpins: 0, autoSpins: 0, tasksDone: 0, limitsResetTime: Date.now() + (4 * 3600000),
+            dailyDay: 1, lastDailyClaim: null, referrals: 0, withdrawAdsWatched: 0, isFirstSpinDone: false
+        };
+
+        let UserData = JSON.parse(localStorage.getItem('FreeEarnState')) || defaultState;
+
+        function checkLimits() {
+            if (Date.now() > UserData.limitsResetTime) {
+                UserData.manualSpins = 0; UserData.autoSpins = 0; UserData.tasksDone = 0;
+                UserData.limitsResetTime = Date.now() + (4 * 3600000);
+                saveData();
+            }
+        }
+        checkLimits();
+
+        function saveData() { localStorage.setItem('FreeEarnState', JSON.stringify(UserData)); updateUI(); }
+
+        function updateUI() {
+            document.getElementById('userNameDisplay').innerText = UserData.name;
+            const formattedBalance = UserData.balance.toLocaleString();
+            document.getElementById('userBalance').innerText = formattedBalance;
+            document.getElementById('walletBalance').innerText = formattedBalance;
+            document.getElementById('walletFiat').innerText = (UserData.balance * (5/10000)).toFixed(2);
+            
+            document.getElementById('manualSpinsLeft').innerText = Math.max(0, 21 - UserData.manualSpins);
+            document.getElementById('autoSpinsLeft').innerText = Math.max(0, 21 - UserData.autoSpins);
+            document.getElementById('tasksLeft').innerText = Math.max(0, 20 - UserData.tasksDone);
+            document.getElementById('manualSpinCost').innerText = UserData.isFirstSpinDone ? "(Watch Ad)" : "(Free)";
+
+            document.getElementById('refCount').innerText = UserData.referrals;
+            document.getElementById('refEarned').innerText = (UserData.referrals * 400).toLocaleString();
+            document.getElementById('refLink').innerText = `t.me/FreeEarnBot?start=${UserData.id}`;
+
+            renderDailyRewards(); updateWalletLimits();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(tabId + 'Page').classList.add('active');
+            event.currentTarget.classList.add('active');
+            window.scrollTo(0,0);
+        }
+
+        // --- Ad Engine Logic with Iframe ---
+        let currentAdInterval = null;
+        let adCallback = null;
+
+        function playAd(adType, totalSeconds, sequence, callback) {
+            const modal = document.getElementById('adModal');
+            const timerEl = document.getElementById('adTimer');
+            const seqEl = document.getElementById('adSequenceText');
+            const iframe = document.getElementById('adIframe');
+            
+            // Set appropriate link based on Adsterra Type A or B
+            let adUrl = adType.includes("A") ? AD_LINKS["A"] : AD_LINKS["B"];
+            iframe.src = adUrl;
+            modal.style.display = 'flex';
+            
+            let currentSeq = 1;
+            let timeRemaining = totalSeconds;
+            
+            if(sequence > 1) {
+                seqEl.style.display = 'block';
+                seqEl.innerText = `Ad ${currentSeq} of ${sequence}`;
+            } else { seqEl.style.display = 'none'; }
+
+            adCallback = callback;
+            timerEl.innerText = timeRemaining;
+
+            const totalRunTime = totalSeconds;
+
+            currentAdInterval = setInterval(() => {
+                timeRemaining--;
+                timerEl.innerText = timeRemaining;
+                
+                // If sequence, simulate the second ad loading halfway
+                if (sequence > 1 && timeRemaining === Math.floor(totalRunTime/2)) {
+                    currentSeq = 2;
+                    seqEl.innerText = `Ad ${currentSeq} of ${sequence}`;
+                    iframe.src = adUrl; // reload link for the 2nd ad impression
+                }
+
+                if (timeRemaining <= 0) {
+                    clearInterval(currentAdInterval);
+                    modal.style.display = 'none';
+                    iframe.src = ""; // Stop playing media
+                    if(adCallback) adCallback(true);
+                }
+            }, 1000);
+        }
+
+        function cancelAd() {
+            clearInterval(currentAdInterval);
+            document.getElementById('adModal').style.display = 'none';
+            document.getElementById('adIframe').src = "";
+            if(adCallback) adCallback(false);
+            if(isAutoRunning) stopAutoSpin();
+        }
+
+        // --- Spin Wheel (Canvas) ---
+        const segments = [50, 70, 90, 100, 120, 140, 150, 0];
+        const colors = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6'];
+        let currentRotation = 0, isSpinning = false, wonAmount = 0;
+
+        function drawWheel(cId) {
+            const c = document.getElementById(cId), ctx = c.getContext('2d'), r = c.width/2 - 10, a = Math.PI/(segments.length/2);
+            ctx.clearRect(0,0,c.width,c.height);
+            for (let i=0; i<segments.length; i++) {
+                ctx.beginPath(); ctx.fillStyle = colors[i]; ctx.moveTo(c.width/2, c.height/2);
+                ctx.arc(c.width/2, c.height/2, r, i*a, (i+1)*a, false); ctx.lineTo(c.width/2, c.height/2); ctx.fill();
+                ctx.save(); ctx.translate(c.width/2, c.height/2); ctx.rotate(i*a + a/2);
+                ctx.textAlign="right"; ctx.fillStyle="#fff"; ctx.font="bold 20px Arial";
+                ctx.fillText(segments[i]===0?"Try Again":segments[i], r-20, 10); ctx.restore();
+            }
+        }
+        drawWheel('spinWheel'); drawWheel('autoSpinWheel');
+
+        function executeSpin(cId, onDone) {
+            if (isSpinning) return;
+            isSpinning = true;
+            const w = document.getElementById(cId), deg = currentRotation + 360*5 + Math.floor(Math.random()*360);
+            currentRotation = deg; w.style.transform = `rotate(${deg}deg)`;
+            setTimeout(() => {
+                isSpinning = false;
+                const i = Math.floor(((360-(deg%360)+270)%360)/(360/segments.length));
+                onDone(segments[i]);
+            }, 3000);
+        }
+
+        function startManualSpin() {
+            if(UserData.manualSpins >= 21) return alert("Limit reached! Try again in a few hours.");
+            if(isSpinning) return;
+            document.getElementById('btnManualSpin').classList.add('hidden');
+            const doSpin = () => {
+                executeSpin('spinWheel', (amt) => {
+                    UserData.manualSpins++; saveData();
+                    if(amt > 0) {
+                        wonAmount = amt;
+                        document.getElementById('btnManualClaim').classList.remove('hidden');
+                        document.getElementById('btnManualClaim').innerText = `CLAIM ${amt} COINS`;
+                    } else {
+                        alert("Try Again."); document.getElementById('btnManualSpin').classList.remove('hidden');
+                    }
+                });
+            };
+            if (!UserData.isFirstSpinDone) { UserData.isFirstSpinDone = true; doSpin(); }
+            else { playAd("Adsterra-A", 10, 1, (c) => { if(c) doSpin(); else document.getElementById('btnManualSpin').classList.remove('hidden'); }); }
+        }
+
+        function claimManualSpin() {
+            document.getElementById('btnManualClaim').classList.add('hidden');
+            playAd("Adsterra-B", 10, 1, (c) => {
+                if(c) { UserData.balance += wonAmount; saveData(); alert(`+${wonAmount} coins!`); }
+                document.getElementById('btnManualSpin').classList.remove('hidden');
+            });
+        }
+
+        let isAutoRunning = false, autoLoopTimeout = null;
+        function startAutoSpin() {
+            if(UserData.autoSpins >= 21) return alert("Limit of 21 auto spins reached.");
+            isAutoRunning = true;
+            document.getElementById('btnAutoSpinStart').classList.add('hidden');
+            document.getElementById('btnAutoSpinStop').classList.remove('hidden');
+            autoSpinCycle();
+        }
+        function stopAutoSpin() {
+            isAutoRunning = false; clearTimeout(autoLoopTimeout);
+            document.getElementById('btnAutoSpinStop').classList.add('hidden');
+            document.getElementById('btnAutoSpinStart').classList.remove('hidden');
+        }
+        function autoSpinCycle() {
+            if(!isAutoRunning || UserData.autoSpins >= 21) return stopAutoSpin();
+            playAd("Adsterra-A", 30, 2, (c) => { // 15s + 15s = 30s
+                if(c && isAutoRunning) {
+                    executeSpin('autoSpinWheel', (amt) => {
+                        UserData.autoSpins++; if(amt > 0) UserData.balance += amt; saveData();
+                        if(isAutoRunning) autoLoopTimeout = setTimeout(autoSpinCycle, 2000);
+                    });
+                } else stopAutoSpin();
+            });
+        }
+
+        const dailyRewards = [10, 20, 30, 50, 70, 90, 100];
+        function renderDailyRewards() {
+            const grid = document.getElementById('dailyRewardsGrid'); grid.innerHTML = '';
+            const now = new Date(), today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+            let canClaim = UserData.lastDailyClaim !== today;
+            for(let i=0; i<7; i++) {
+                const claimed = i < UserData.dailyDay - (canClaim?0:1), isT = i === (UserData.dailyDay-1);
+                let bg = "bg-slate-800 border-slate-600";
+                if(claimed) bg = "bg-green-900/50 border-green-500 text-green-400";
+                if(isT && canClaim) bg = "bg-blue-900/50 border-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.5)]";
+                grid.innerHTML += `<div class="p-2 border rounded-lg ${bg}"><p class="font-bold">Day ${i+1}</p><p class="text-yellow-400"><i class="fa-solid fa-coins text-[10px]"></i> ${dailyRewards[i]}</p>${claimed?'<i class="fa-solid fa-check text-green-500 mt-1"></i>':''}</div>`;
+            }
+            const btn = document.getElementById('btnDailyClaim');
+            if(!canClaim) { btn.classList.add('opacity-50', 'cursor-not-allowed'); btn.innerText = "Come back tomorrow"; btn.onclick = null; }
+            else { btn.classList.remove('opacity-50', 'cursor-not-allowed'); btn.innerText = "Claim Today's Reward"; btn.onclick = () => {
+                playAd("Adsterra-B", 10, 1, (c) => {
+                    if(c) {
+                        UserData.balance += dailyRewards[UserData.dailyDay - 1]; UserData.lastDailyClaim = today;
+                        if(UserData.dailyDay < 7) UserData.dailyDay++; else UserData.dailyDay = 1;
+                        saveData(); alert("Daily claimed!");
+                    }
+                });
+            };}
+        }
+
+        const taskDefs = [
+            { name: "Visit Website", reward: 70, type: "manual", duration: 20, ad: "Adsterra-B", seq: 1 },
+            { name: "Watch Video", reward: 80, type: "manual", duration: 20, ad: "Adsterra-B", seq: 1 },
+            { name: "Watch Ad", reward: 60, type: "manual", duration: 20, ad: "Adsterra-B", seq: 1 },
+            { name: "Auto Visit", reward: 150, type: "auto", duration: 30, ad: "Adsterra-A", seq: 2 },
+            { name: "Auto Watch", reward: 150, type: "auto", duration: 30, ad: "Adsterra-A", seq: 2 }
+        ];
+
+        function renderTasks() {
+            const con = document.getElementById('taskListContainer'); con.innerHTML = '';
+            taskDefs.forEach((t, i) => {
+                con.innerHTML += `<div class="glass-panel p-4 flex justify-between items-center"><div><h4 class="font-bold text-sm ${t.type==='auto'?'text-purple-400':'text-blue-400'}">${t.name}</h4><p class="text-xs text-yellow-400">+${t.reward} Coins</p></div><button class="${t.type==='auto'?'bg-purple-600':'bg-blue-600'} px-5 py-2 rounded-lg font-bold text-sm shadow-lg" onclick="startTask(${i})">${t.type==='auto'?'START AUTO':'GO'}</button></div>`;
+            });
+        } renderTasks();
+
+        function startTask(idx) {
+            if(UserData.tasksDone >= 20) return alert("Task limit reached.");
+            const t = taskDefs[idx];
+            playAd(t.ad, t.duration, t.seq, (c) => {
+                if(c) {
+                    if(t.type==='manual' && !confirm("Click OK to claim reward.")) return;
+                    UserData.balance += t.reward; UserData.tasksDone++; saveData();
+                    if(t.type==='auto') alert("Auto Task Successful! Loop can continue manually.");
+                }
+            });
+        }
+
+        function copyRefLink() {
+            UserData.referrals++; saveData(); // Simulated
+            alert("Copied! (Demo: 1 Referral added)");
+        }
+
+        function updateWalletLimits() {
+            const btn = document.getElementById('btnWithdraw');
+            document.getElementById('wdAdStatus').innerText = `${UserData.withdrawAdsWatched}/10`;
+            document.getElementById('wdRefStatus').innerText = `${UserData.referrals}/7`;
+            document.getElementById('wdAdBar').style.width = Math.min(100, (UserData.withdrawAdsWatched/10)*100) + '%';
+            document.getElementById('wdRefBar').style.width = Math.min(100, (UserData.referrals/7)*100) + '%';
+            if(UserData.withdrawAdsWatched >= 10 && UserData.referrals >= 7) {
+                if(UserData.balance >= 10000000) {
+                    btn.innerText = "WITHDRAW NOW"; btn.className = "w-full bg-green-500 text-white py-3 rounded-xl font-bold shadow-[0_0_15px_rgba(34,197,94,0.5)]";
+                    btn.onclick = () => { alert("Withdraw request submitted!"); UserData.balance -= 10000000; saveData(); };
+                } else { btn.innerText = "Insufficient Balance (10M)"; btn.onclick = null; }
+            } else {
+                btn.innerText = "Watch Ads to Unlock"; btn.className = "w-full bg-slate-600 text-gray-300 py-3 rounded-xl font-bold cursor-not-allowed";
+                btn.onclick = () => {
+                    if(UserData.withdrawAdsWatched < 10) {
+                        playAd("Adsterra-A", 30, 2, (c) => { if(c) { UserData.withdrawAdsWatched++; saveData(); } });
+                    } else alert("Need more referrals.");
+                };
+            }
+        }
+
+        function startExchange() {
+            if(UserData.balance < 10000) return alert("Min 10,000 coins.");
+            playAd("Adsterra-B", 40, 2, (c) => { if(c) { UserData.balance -= 10000; saveData(); alert("Exchanged 10,000 Coins for 5 BDT!"); } });
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
