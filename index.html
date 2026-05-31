@@ -11,8 +11,8 @@
   <!-- Telegram Web App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   
-  <!-- Adsgram SDK (For Block ID: 33582) -->
-  <script src="https://sad.adsgram.org/sdk/v1/adsgram.js"></script>
+  <!-- AdsGram SDK (Updated Official Script) -->
+  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 
   <script>
     tailwind.config = {
@@ -600,6 +600,15 @@
       }
     }
 
+    // AdsGram SDK Initialization with your Block ID
+    let AdController = null;
+    if (window.Adsgram) {
+      AdController = window.Adsgram.init({ 
+        blockId: "33582",
+        debug: true // টেস্টিং সুবিধার জন্য debug মোড অন রাখা হয়েছে
+      });
+    }
+
     // Canvas Spin Wheel Variables
     const segments = [50, 70, 90, 100, 120, 140, 150, "Try Again"];
     const colors = ["#3b82f6", "#1e3a8a", "#8b5cf6", "#4c1d95", "#ec4899", "#831843", "#14b8a6", "#0f172a"];
@@ -669,7 +678,7 @@
     // Helper to replicate Ads and avoid duplicate script loading failures inside SPA
     function replicateAdsterraBanners(pageId) {
       if (pageId === 'tasks') {
-        document.getElementById('tasks-banner-1').innerHTML = `<div class="w-full flex justify-center"><iframe src="about:blank" style="display:none"></iframe><!-- Native placeholder logic fallback --></div>`;
+        document.getElementById('tasks-banner-1').innerHTML = `<p class="text-[10px] text-slate-500 text-center">Adsterra Native Banner 1</p>`;
         document.getElementById('tasks-banner-2').innerHTML = `<p class="text-[10px] text-slate-500 text-center">Adsterra Native Banner 2</p>`;
         document.getElementById('tasks-banner-3').innerHTML = `<p class="text-[10px] text-slate-500 text-center">Adsterra Native Banner 3</p>`;
       } else if (pageId === 'referral') {
@@ -718,21 +727,23 @@
       document.getElementById('check-ref-limit').innerText = state.referredCount >= 7 ? '✅' : '❌';
     }
 
-    // ADSTERRA / ADSGRAM SIMULATOR ENGINE (Supports real integration with block ID 33582 fallback)
-    function playAd(blockId, seconds, adCountText) {
+    // ADSTERRA / ADSGRAM ENGINE WITH FALLBACK
+    function playAd(seconds, adCountText) {
       return new Promise((resolve) => {
-        // Step 1: Check if genuine Adsgram script SDK is successfully loaded
-        if (window.Adsgram && window.Adsgram.init) {
-          const AdController = window.Adsgram.init({ blockId: "33582" });
-          AdController.show().then((result) => {
-            // genuine ad watched fully
-            resolve(true);
-          }).catch((err) => {
-            // failed, blocked or skipped -> launch our beautiful modal backup simulation
-            launchAdModalSimulator(seconds, adCountText, resolve);
-          });
+        // Step 1: Check if genuine Adsgram SDK is loaded and initialized
+        if (AdController) {
+          AdController.show()
+            .then((result) => {
+              // Real ad completed successfully
+              resolve(true);
+            })
+            .catch((err) => {
+              // Error/Adblock/No Fill -> Fallback to custom simulation
+              console.log("Adsgram Error, running Simulator fallback:", err);
+              launchAdModalSimulator(seconds, adCountText, resolve);
+            });
         } else {
-          // If Offline or SDK load error -> Use local Modal Simulator
+          // Fallback to local simulator if offline or block blocked
           launchAdModalSimulator(seconds, adCountText, resolve);
         }
       });
@@ -783,7 +794,7 @@
     // BACK-TO-BACK MULTIPLE ADS CALLER
     async function playMultipleAdsBackToBack(count, totalSecondsPerAd) {
       for (let i = 1; i <= count; i++) {
-        await playAd("33582", totalSecondsPerAd, `Ad ${i} of ${count}`);
+        await playAd(totalSecondsPerAd, `Ad ${i} of ${count}`);
       }
       return true;
     }
@@ -833,7 +844,7 @@
       
       if (!manualSpinFree) {
         // 2nd spin onwards triggers an ad before spinning
-        await playAd("33582", 6, "SPIN REQUISITE AD");
+        await playAd(6, "SPIN REQUISITE AD");
       }
 
       isSpinning = true;
@@ -856,7 +867,7 @@
     // MANUAL SPIN CLAIM REWARD TRIGGER
     document.getElementById('claim-btn').onclick = async () => {
       // Must watch another ad to Claim reward
-      await playAd("33582", 5, "CLAIM BOUNTY AD");
+      await playAd(5, "CLAIM BOUNTY AD");
 
       const wonValue = segments[selectedWinningIndex];
       let coinsWon = 0;
@@ -997,8 +1008,8 @@
       const todayString = new Date().toISOString().split('T')[0];
       if (state.dailyClaimedDate === todayString) return;
 
-      // Play Adsgram simulation ad to claim daily
-      await playAd("33582", 7, "Daily Reward Bonus ad");
+      // Play Adsgram ad to claim daily
+      await playAd(7, "Daily Reward Bonus ad");
 
       let currentStreak = parseInt(localStorage.getItem('streak_seq') || '0');
       const rewardsList = [10, 20, 30, 50, 70, 90, 100];
@@ -1023,7 +1034,7 @@
         return;
       }
 
-      await playAd("33582", 10, "Watch Video Task");
+      await playAd(10, "Watch Video Task");
       
       state.balance += 70;
       state.totalEarned += 70;
@@ -1169,7 +1180,6 @@
 
       // Process conversion
       state.balance -= 10000;
-      // Convert BDT simulating wallet credit or show success convert alert
       saveState();
 
       showSuccessPopup("Exchange Successful!", "সফলভাবে ১০,০০০ কয়েন কেটে ৫ BDT ওয়ালেটে এক্সচেঞ্জ সম্পন্ন করা হয়েছে।");
