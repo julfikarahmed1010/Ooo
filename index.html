@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Telegram Earning App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Adsgram SDK -->
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    
+    <style>
+        /* Custom styles for seamless mobile look */
+        body {
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color, #0f172a);
+            color: var(--tg-theme-text-color, #f1f5f9);
+        }
+        .active-nav-item {
+            color: var(--tg-theme-button-color, #6366f1);
+            transform: scale(1.05);
+        }
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between pb-24 overflow-x-hidden select-none">
+
+    <!-- TOP HEADER BAR -->
+    <header class="bg-slate-800/80 backdrop-blur border-b border-slate-700 sticky top-0 z-40 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-2 cursor-pointer" onclick="openProfilePopup()">
+            <div class="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md" id="profile-avatar">
+                U
+            </div>
+            <div class="text-xs">
+                <p class="font-bold text-slate-200" id="profile-name">Guest User</p>
+                <p class="text-indigo-400">View Profile</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-1 bg-slate-900/60 px-3 py-1.5 rounded-full border border-slate-700">
+            <span class="text-amber-400 font-bold">🪙</span>
+            <span class="font-mono font-extrabold text-sm text-amber-300" id="global-balance">0</span>
+        </div>
+        <button onclick="navigateTo('wallet')" class="p-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+        </button>
+    </header>
+
+    <!-- CONTENT WRAPPER -->
+    <main class="flex-grow max-w-md w-full mx-auto px-4 py-4 space-y-6">
+
+        <!-- ==================== HOME PAGE ==================== -->
+        <section id="page-home" class="space-y-6 hidden">
+            <!-- Adsterra Native Banner 1 Container -->
+            <div class="flex justify-center my-2">
+                <iframe srcdoc="
+                  <html>
+                    <body style='margin:0; padding:0; display:flex; justify-content:center; align-items:center;'>
+                      <script>
+                        atOptions = { 'key' : '16460146d201905e0639203ad3fc1983', 'format' : 'iframe', 'height' : 50, 'width' : 320, 'params' : {} };
+                      </script>
+                      <script src='https://freshmanhow.com/16460146d201905e0639203ad3fc1983/invoke.js'></script>
+                    </body>
+                  </html>" 
+                  width="320" height="50" style="border:none; overflow:hidden;" class="rounded shadow">
+                </iframe>
+            </div>
+
+            <!-- Manual Spin Section -->
+            <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700 text-center space-y-4 shadow-xl">
+                <h2 class="text-base font-bold text-slate-200">🎡 Lucky Wheel Spin</h2>
+                <div class="relative w-64 h-64 mx-auto flex items-center justify-center">
+                    <!-- Wheel Canvas -->
+                    <canvas id="wheel-canvas" width="256" height="256" class="w-full h-full transition-transform duration-1000 ease-out"></canvas>
+                    <!-- Wheel Center Pointer -->
+                    <div class="absolute w-8 h-8 bg-indigo-600 border-4 border-white rounded-full z-10 shadow-lg flex items-center justify-center">
+                        <div class="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                    <div class="absolute -top-1 z-20 text-red-500 text-2xl font-bold">▼</div>
+                </div>
+                
+                <div class="flex justify-center space-x-2">
+                    <button id="btn-spin-manual" onclick="spinManual()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition transform active:scale-95 text-sm">
+                        SPIN (Free 1st)
+                    </button>
+                    <button id="btn-claim-manual" onclick="claimManual()" class="hidden w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition transform active:scale-95 text-sm">
+                        Claim Reward
+                    </button>
+                </div>
+            </div>
+
+            <!-- Auto Spin Section -->
+            <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700 text-center space-y-4 shadow-xl">
+                <div class="flex justify-between items-center px-1">
+                    <h2 class="text-base font-bold text-slate-200 flex items-center space-x-1">
+                        <span>🤖 Auto Pilot Spin</span>
+                    </h2>
+                    <span class="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full" id="auto-spin-count">Rem: 100/100</span>
+                </div>
+                <p class="text-xs text-slate-400">Plays 2 Ads back-to-back dynamically before spinning automatically</p>
+                <div class="flex space-x-2">
+                    <button id="btn-auto-spin-start" onclick="startAutoSpin()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition transform active:scale-95">
+                        Start Auto
+                    </button>
+                    <button id="btn-auto-spin-stop" onclick="stopAutoSpin()" disabled class="w-full bg-slate-700 text-slate-400 font-bold py-2.5 px-4 rounded-xl text-sm transition cursor-not-allowed">
+                        STOP
+                    </button>
+                </div>
+            </div>
+
+            <!-- Adsterra Native Banner 2 Container -->
+            <div class="flex justify-center my-2">
+                <iframe srcdoc="
+                  <html>
+                    <body style='margin:0; padding:0; display:flex; justify-content:center; align-items:center;'>
+                      <script>
+                        atOptions = { 'key' : 'fc1f5eaa03bb67a743c0e612bcf0397a', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };
+                      </script>
+                      <script src='https://freshmanhow.com/fc1f5eaa03bb67a743c0e612bcf0397a/invoke.js'></script>
+                    </body>
+                  </html>" 
+                  width="100%" height="90" style="border:none; overflow:hidden; max-width: 728px;" class="rounded shadow">
+                </iframe>
+            </div>
+
+            <!-- Daily Reward Section -->
+            <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700 space-y-3 shadow-xl">
+                <h2 class="text-base font-bold text-slate-200">📅 7-Day Rewards</h2>
+                <div class="grid grid-cols-4 gap-2 text-center" id="daily-rewards-grid">
+                    <!-- Javascript will render grid dynamically -->
+                </div>
+                <button id="btn-daily-reward" onclick="claimDaily()" class="w-full bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-sm transition cursor-not-allowed" disabled>
+                    Claim Daily Reward
+                </button>
+            </div>
+
+            <!-- Adsterra Native Banner 3 Container -->
+            <div class="flex justify-center my-2">
+                <iframe srcdoc="
+                  <html>
+                    <body style='margin:0; padding:0; display:flex; justify-content:center; align-items:center;'>
+                      <script>
+                        atOptions = { 'key' : 'b301e9e298a7004777ddcb58245aa4fa', 'format' : 'iframe', 'height' : 250, 'width' : 300, 'params' : {} };
+                      </script>
+                      <script src='https://freshmanhow.com/b301e9e298a7004777ddcb58245aa4fa/invoke.js'></script>
+                    </body>
+                  </html>" 
+                  width="300" height="250" style="border:none; overflow:hidden;" class="rounded shadow">
+                </iframe>
+            </div>
+        </section>
+
+        <!-- ==================== TASKS PAGE ==================== -->
+        <section id="page-tasks" class="space-y-6 hidden">
+            <!-- Banner 1 -->
+            <div class="flex justify-center">
+                <iframe srcdoc="<html><body style='margin:0;padding:0;display:flex;justify-content:center;align-items:center;'><script>atOptions={'key':'16460146d201905e0639203ad3fc1983','format':'iframe','height':50,'width':320,'params':{}};</script><script src='https://freshmanhow.com/16460146d201905e0639203ad3fc1983/invoke.js'></script></body></html>" width="320" height="50" style="border:none; overflow:hidden;" class="rounded"></iframe>
+            </div>
+
+            <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700 space-y-4 shadow-xl">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-base font-bold text-slate-200">🚀 Available Tasks</h2>
+                    <span class="text-xs bg-indigo-900/50 text-indigo-300 px-2.5 py-0.5 rounded-full border border-indigo-700" id="tasks-limit-view">Rem: 500/500</span>
+                </div>
+                
+                <!-- Task List -->
+                <div class="space-y-3">
+                    <!-- Task 1 -->
+                    <div class="bg-slate-900 p-3.5 rounded-xl border border-slate-700 flex items-center justify-between">
+                        <div class="space-y-1">
+                            <p class="text-sm font-bold text-slate-200">Watch Ad Video</p>
+                            <p class="text-xs text-amber-400 font-mono">+70 Coins</p>
+                        </div>
+                        <button onclick="startSingleAdTask()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1.5 px-4 rounded-lg text-xs transition">
+                            Go
+                        </button>
+                    </div>
+
+                    <!-- Task 2 (Auto Watch Task) -->
+                    <div class="bg-slate-900 p-3.5 rounded-xl border border-slate-700 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="space-y-1">
+                                <p class="text-sm font-bold text-slate-200">Auto Watch Ad Loop</p>
+                                <p class="text-xs text-amber-400 font-mono">+70 Coins per completion</p>
+                            </div>
+                            <button id="btn-auto-task-toggle" onclick="toggleAutoTask()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-4 rounded-lg text-xs transition">
+                                Start Auto
+                            </button>
+                        </div>
+                        <div id="auto-task-progress-box" class="hidden space-y-1">
+                            <div class="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                                <div id="auto-task-progress-bar" class="bg-emerald-500 h-full w-0 transition-all duration-300"></div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 text-right" id="auto-task-status-text">Playing ads...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Banner 2 -->
+            <div class="flex justify-center">
+                <iframe srcdoc="<html><body style='margin:0;padding:0;display:flex;justify-content:center;align-items:center;'><script>atOptions={'key':'fc1f5eaa03bb67a743c0e612bcf0397a','format':'iframe','height':90,'width':728,'params':{}};</script><script src='https://freshmanhow.com/fc1f5eaa03bb67a743c0e612bcf0397a/invoke.js'></script></body></html>" width="100%" height="90" style="border:none; overflow:hidden;" class="rounded"></iframe>
+            </div>
+
+            <!-- Banner 3 -->
+            <div class="flex justify-center">
+                <iframe srcdoc="<html><body style='margin:0;padding:0;display:flex;justify-content:center;align-items:center;'><script>atOptions={'key':'b301e9e298a7004777ddcb58245aa4fa','format':'iframe','height':250,'width':300,'params':{}};</script><script src='https://freshmanhow.com/b301e9e298a7004777ddcb58245aa4fa/invoke.js'></script></body></html>" width="300" height="250" style="border:none; overflow:hidden;" class="rounded"></iframe>
+            </div>
+        </section>
+
+        <!-- ==================== REFERRAL PAGE ==================== -->
+        <section id="page-referral" class="space-y-6 hidden">
+            <!-- Banner 1 -->
+            <div class="flex justify-center">
+                <iframe srcdoc="<html><body style='margin:0;padding:0;display:flex;justify-content:center;align-items:center;'><script>atOptions={'key':'16460146d201905e0639203ad3fc1983','format':'iframe','height':50,'width':320,'params':{}};</script><script src='https://freshmanhow.com/16460146d201905e0639203ad3fc1983/invoke.js'></script></body></html>" width="320" height="50" style="border:none; overflow:hidden;" class="rounded"></iframe>
+            </div>
+
+            <!-- Referral Link Generator -->
+            <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700 space-y-3 shadow-xl">
+                <h2 class="text-base font-bold text-slate-200">🔗 Invite Link</h2>
+                <div class="flex space-x-2">
+                    <input type="text" id="referral-link" readonly value="Generating..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-300 focus:outline-none">
+                    <button onclick="copyReferralLink()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 rounded-xl text-xs transition">
+                        Copy
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Dashboard -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 text-center space-y-1 shadow-xl">
+                    <p class="text-xs text-slate-400">Total Referred</p>
+                    <p class="text-xl font-bold text-slate-200" id="ref-count">0 Users</p>
+                </div>
+                <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 text-center space-y-1 shadow-xl">
+                    <p class="text-xs text-slate-400">Referral Earnings</p>
+                    <p class="text-xl font-bold text-amber-300" id="ref-earnings">0 Coins</p>
+                </div>
+            </div>
+
+            <!-- Rules Box -->
+            <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700 space-y-2.5 shadow-xl">
+                <h3 class="text-sm font-bold text-indigo-400">📌 Referral Policy</h3>
+                <ul class="text-xs text-slate-300 space-y-1.5 list-disc pl-4 leading-relaxed">
+                    <li>Get <strong class="text-amber-300">400 Coins</strong> for each active referee.</li>
+                    <li>Referrals trigger payout only when your referred user completes their first task or spin.</li>
+                    <li>One referral structure is allowed per TG account. Avoid duplicate profiles.</li>
+                </ul>
+                <div class="pt-2">
+                    <button onclick="simulateReferralActivity()" class="w-full bg-slate-700/50 text-slate-300 border border-slate-600/50 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-700 active:scale-95 transition">
+                        Simulate New Referrer Join
+                    </button>
+                </div>
+            </div>
+
+            <!-- Banner 2 -->
+            <div class="flex justify-center">
+                <iframe srcdoc="<html><body style='margin:0;padding:0;display:flex;justify-content:center;align-items:center;'><script>atOptions={'key':'fc1f5eaa03bb67a743c0e612bcf0397a','format':'iframe','height':90,'width':728,'params':{}};</script><script src='https://freshmanhow.com/fc1f5eaa03bb67a743c0e612bcf0397a/invoke.js'></script></body></html>" width="100%" height="90" style="border:none; overflow:hidden;" class="rounded"></iframe>
+            </div>
+
+            <!-- Banner 3 -->
+            <div class="flex justify-center">
+                <iframe srcdoc="<html><body style='margin:0;padding:0;display:flex;justify-content:center;align-items:center;'><script>atOptions={'key':'b301e9e298a7004777ddcb58245aa4fa','format':'iframe','height':250,'width':300,'params':{}};</script><script src='https://freshmanhow.com/b301e9e298a7004777ddcb58245aa4fa/invoke.js'></script></body></html>" width="300" height="250" style="border:none; overflow:hidden;" class="rounded"></iframe>
+            </div>
+        </section>
+
+        <!-- ==================== WALLET PAGE ==================== -->
+        <section id="page-wallet" class="space-y-6 hidden">
+            <!-- Banner 1 -->
+            <div class="flex justify-center">
+                <iframe srcdoc="<html><body style='margin:0;padding:0;display:flex;justify-content:center;align-items:center;'><script>atOptions={'key':'16460146d201905e0639203ad3fc1983','format':'iframe','height':50,'width':320,'params':{}};</script><script src='https://freshmanhow.com/16460146d201905e0639203ad3fc1983/invoke.js'></script></body></html>" width="320" height="50" style="border:none; overflow:hidden;" class="rounded"></iframe>
+            </div>
+
+            <!-- Giant Balance Display -->
+            <div class="bg-gradient-to-br from-indigo-900/40 to-slate-800 p-6 rounded-2xl border border-indigo-700/50 text-center space-y-2 shadow-xl relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl"></div>
+                <p class="text-xs text-indigo-300 font-medium tracking-wider uppercase">Your Coin Balance</p>
+                <h1 class="text-3xl font-extrabold text-amber-300 font-mono flex items-center justify-center space-x-1">
+                    <span>🪙</span> <span id="wallet-balance-num">0</span>
+                </h1>
+                <p class="text-xs text-slate-400" id="estimated-bdt">Estimated: 0.00 BDT</p>
+            </div>
+
+            <!-- Tabs: Withdraw & Exchange -->
+            <div class="bg-slate-800 rounded-2xl border border-slate-700 p-4 space-y-4 shadow-xl">
+                <div class="flex border-b border-slate-700">
+                    <button onclick="setWalletTab('withdraw')" id="tab-withdraw" class="flex-1 pb-2 text-sm font-bold text-slate-200 border-b-2 border-indigo-500 transition">Withdraw</button>
+                    <button onclick="setWalletTab('exchange')" id="tab-exchange" class="flex-1 pb-2 text-sm font-bold text-slate-400 border-b-2 border-transparent transition">Exchange</button>
+                </div>
+
+                <!-- Withdrawal Interface -->
+                <div id="pane-withdraw" class="space-y-4">
+                    <div class="space-y-2.5">
+                        <label class="block text-xs text-slate-400 font-medium">Select Method</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="selectWithdrawMethod('bkash')" id="method-bkash" class="py-2.5 px-3 rounded-xl border border-indigo-600 bg-indigo-950/30 text-indigo-300 font-bold text-xs transition">bKash</button>
+                            <button onclick="selectWithdrawMethod('nagad')" id="method-nagad" class="py-2.5 px-3 rounded-xl border border-slate-700 bg-slate-900 text-slate-400 font-bold text-xs transition">Nagad</button>
+                            <button onclick="selectWithdrawMethod('usdt')" id="method-usdt" class="py-2.5 px-3 rounded-xl border border-slate-700 bg-slate-900 text-slate-400 font-bold text-xs transition">USDT-TRC20</button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs text-slate-400 font-medium" id="withdraw-label">bKash Number</label>
+                        <input type="text" id="withdraw-address" placeholder="01XXXXXXXXX" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 font-mono">
+                    </div>
+
+                    <!-- Withdrawal Conditions Check -->
+                    <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-2">
+                        <p class="text-xs font-bold text-slate-300">Requirements Checklist:</p>
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-slate-400">Min 7 Active Referrals:</span>
+                                <span id="req-referral-status" class="font-bold text-red-500">0/7 (Failed)</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-slate-400">Pre-withdrawal Ads:</span>
+                                <span id="req-ads-status" class="font-bold text-red-500">0/10 Tasks (Failed)</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-slate-400">Min Coins (10,000,000):</span>
+                                <span id="req-coins-status" class="font-bold text-red-500">No</span>
+                            </div>
+                        </div>
+                        <button onclick="completeWithdrawAdTask()" class="w-full bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 py-1.5 rounded-lg text-xs font-bold transition">
+                            Watch Ad Task (+1 Completed Ads)
+                        </button>
+                    </div>
+
+                    <button onclick="submitWithdrawal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-sm transition">
+                        Submit Withdrawal (10,000 BDT)
+                    </button>
+                </div>
+
+                <!-- Exchange Interface -->
+                <div id="pane-exchange" class="space-y-4 hidden">
+                    <div class="bg-slate-900 p-3.5 rounded-xl border border-slate-800 text-center space-y-1">
+                        <p class="text-xs text-slate-400">Simulated Conversion Rate</p>
+                        <p class="text-sm font-bold text-slate-200">10,000 Coins = <span class="text-amber-400 font-bold">5 BDT</span></p>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs text-slate-400 font-medium">Coins to Exchange</label>
+                        <input type="number" id="exchange-amount-input" value="10000" min="10000" step="10000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-2">
+                        <p class="text-xs font-bold text-slate-300">Exchange Conditions:</p>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-400">Required Ads Watched:</span>
+                            <span id="req-exchange-ads-status" class="font-bold text-red-500">0/5 Tasks (Failed)</span>
+                        </div>
+                        <button onclick="completeExchangeAdTask()" class="w-full bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 py-1.5 rounded-lg text-xs font-bold transition">
+                            Watch Ad Task (+1 Completed Ads)
+                        </button>
+                    </div>
+
+                    <button onclick="submitExchange()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded-xl text-sm transition">
+                        Convert to BDT
+                    </button>
+                </div>
+            </div>
+
+            <!-- Banner 2 -->
+            <div class="flex justify-center">
+                <iframe srcdoc="<html><body style='margin:0;padding:0;display:flex;justify-content:center;align-items:center;'><script>atOptions={'key':'fc1f5eaa03bb67a743c0e612bcf0397a','format':'iframe','height':90,'width':728,'params':{}};</script><script src='https://freshmanhow.com/fc1f5eaa03bb67a743c0e612bcf0397a/invoke.js'></script></body></html>" width="100%" height="90" style="border:none; overflow:hidden;" class="rounded"></iframe>
+            </div>
+
+            <!-- Banner 3 (represented as Banner 4 requested by layout) -->
+            <div class="flex justify-center">
+                <iframe srcdoc="<html><body style='margin:0;padding:0;display:flex;justify-content:center;align-items:center;'><script>atOptions={'key':'b301e9e298a7004777ddcb58245aa4fa','format':'iframe','height':250,'width':300,'params':{}};</script><script src='https://freshmanhow.com/b301e9e298a7004777ddcb58245aa4fa/invoke.js'></script></body></html>" width="300" height="250" style="border:none; overflow:hidden;" class="rounded"></iframe>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FIXED BOTTOM NAVIGATION BAR -->
+    <nav class="bg-slate-800/95 backdrop-blur border-t border-slate-700 py-2.5 px-6 fixed bottom-0 left-0 right-0 z-40 max-w-md mx-auto flex justify-between items-center shadow-2xl rounded-t-xl">
+        <button onclick="navigateTo('home')" id="nav-home" class="flex flex-col items-center space-y-1 text-slate-400 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            <span class="text-[10px] font-bold">Home</span>
+        </button>
+        <button onclick="navigateTo('tasks')" id="nav-tasks" class="flex flex-col items-center space-y-1 text-slate-400 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+            <span class="text-[10px] font-bold">Tasks</span>
+        </button>
+        <button onclick="navigateTo('referral')" id="nav-referral" class="flex flex-col items-center space-y-1 text-slate-400 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            <span class="text-[10px] font-bold">Referral</span>
+        </button>
+        <button onclick="navigateTo('wallet')" id="nav-wallet" class="flex flex-col items-center space-y-1 text-slate-400 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            <span class="text-[10px] font-bold">Wallet</span>
+        </button>
+    </nav>
+
+    <!-- ==================== DIALOG BOXES & POPUPS ==================== -->
+
+    <!-- Profile Detail Popup -->
+    <div id="profile-popup" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-sm p-5 space-y-4 shadow-2xl relative">
+            <button onclick="closeProfilePopup()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h3 class="text-sm font-bold text-indigo-400">Profile Details</h3>
+            <div class="space-y-3 font-mono text-xs">
+                <div class="flex justify-between border-b border-slate-700/50 pb-2">
+                    <span class="text-slate-400">Telegram ID:</span>
+                    <span id="popup-user-id" class="text-slate-200">N/A</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-700/50 pb-2">
+                    <span class="text-slate-400">Join Date:</span>
+                    <span id="popup-join-date" class="text-slate-200">N/A</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-700/50 pb-2">
+                    <span class="text-slate-400">Total Coins Earned:</span>
+                    <span id="popup-total-coins" class="text-amber-300 font-bold">0</span>
+                </div>
+            </div>
+            <button onclick="closeProfilePopup()" class="w-full bg-slate-700 text-slate-300 font-bold py-2 rounded-xl text-xs transition">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Fallback Smart Ad Simulator Modal -->
+    <div id="ad-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-slate-900 border border-indigo-500 rounded-2xl w-full max-w-sm p-6 text-center space-y-5 shadow-2xl">
+            <div class="flex justify-center">
+                <span class="text-4xl animate-bounce">📺</span>
+            </div>
+            <h3 class="text-base font-bold text-slate-200" id="ad-modal-title">Simulated Adsgram Ad Running</h3>
+            <p class="text-xs text-slate-400">Please watch till the end to get your rewards.</p>
+            
+            <div class="relative pt-1">
+                <div class="flex mb-2 items-center justify-between">
+                    <div>
+                        <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-indigo-200 bg-indigo-900">
+                            Time Left
+                        </span>
+                    </div>
+                    <div class="text-right">
+                        <span id="ad-timer" class="text-xs font-bold text-indigo-300 font-mono">5s</span>
+                    </div>
+                </div>
+                <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-slate-800">
+                    <div id="ad-progress-bar" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-500 transition-all duration-100 ease-linear" style="width: 100%"></div>
+                </div>
+            </div>
+            <p class="text-[10px] text-slate-500">Ad Close triggers dynamically after timer runs out.</p>
+        </div>
+    </div>
+
+    <!-- Custom Alerts Popup -->
+    <div id="custom-alert-popup" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-xs p-5 space-y-4 shadow-2xl text-center">
+            <span class="text-3xl" id="alert-icon">💡</span>
+            <p class="text-sm font-bold text-slate-200" id="alert-message">Notice message goes here.</p>
+            <button onclick="closeCustomAlert()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-xl text-xs transition">
+                OK
+            </button>
+        </div>
+    </div>
+
+    <!-- Active Loader Status (for sequential ads back-to-back loader) -->
+    <div id="ad-global-loader" class="fixed bottom-5 right-5 bg-slate-800 border border-slate-700 px-4 py-2 rounded-full shadow-2xl flex items-center space-x-2 z-50 hidden">
+        <span class="flex h-2 w-2 relative">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+        </span>
+        <span class="text-[10px] text-slate-300 font-bold" id="ad-global-loader-text">Ad Running...</span>
+    </div>
+
+    <!-- SOCIAL BAR INJECTION -->
+    <script src="https://freshmanhow.com/f1/78/7a/f1787a7d7fcc1fe60abb9a05bde13833.js"></script>
+
+    <!-- MAIN APP JAVASCRIPT LOGIC -->
+    <script>
+        // TG WebApp Init
+        let tgWebApp = null;
+        if (window.Telegram && window.Telegram.WebApp) {
+            tgWebApp = window.Telegram.WebApp;
+            try {
+                tgWebApp.ready();
+                tgWebApp.expand();
+            } catch (e) {
+                console.warn("Telegram WebApp failed to expand", e);
+            }
+        }
+
+        // Adsgram Init
+        let adsgramController = null;
+        try {
+            if (window.Adsgram) {
+                adsgramController = window.Adsgram.init({ blockId: "33582" });
+            }
+        } catch (e) {
+            console.warn("Adsgram is not ready, fallback simulated ads will be used automatically.");
+        }
+
+        // Default local state schema
+        const INITIAL_STATE = {
+            userId: "N/A",
+            username: "Guest",
+            firstName: "Demo User",
+            joinDate: new Date().toLocaleDateString(),
+            balance: 1000,
+            totalEarned: 1000,
+            lastDailyClaim: null,
+            dailyDay: 1,
+            spinLimitRemaining: 100,
+            lastSpinReset: null,
+            lastTaskReset: null,
+            tasksCompletedCount: 0,
+            referralsCount: 0,
+            referralEarnings: 0,
+            hasReferredFirstAction: false,
+            withdrawCompletedAds: 0,
+            exchangeCompletedAds: 0,
+            referredBy: null
+        };
+
+        let state = {};
+
+        // Load State from LocalStorage
+        function loadState() {
+            const raw = localStorage.getItem('tg_mini_app_state_2026');
+            if (raw) {
+                try {
+                    state = JSON.parse(raw);
+                } catch (e) {
+                    state = { ...INITIAL_STATE };
+                }
+            } else {
+                state = { ...INITIAL_STATE };
+            }
+
+            // Sync user data dynamically from Telegram WebApp
+            if (tgWebApp && tgWebApp.initDataUnsafe && tgWebApp.initDataUnsafe.user) {
+                const tgUser = tgWebApp.initDataUnsafe.user;
+                state.userId = tgUser.id || "N/A";
+                state.username = tgUser.username || "Guest";
+                state.firstName = (tgUser.first_name + " " + (tgUser.last_name || "")).trim();
+            } else {
+                // If loaded in a regular browser without TG WebApp, generate dummy credentials
+                if (state.userId === "N/A") {
+                    state.userId = Math.floor(100000000 + Math.random() * 900000000).toString();
+                    state.username = "LocalTester";
+                    state.firstName = "Local Browser Tester";
+                }
+            }
+
+            // Check if user joined via a referral link: https://t.me/BotName/app?startapp=USER_ID
+            if (tgWebApp && tgWebApp.initDataUnsafe && tgWebApp.initDataUnsafe.start_param) {
+                const referrerId = tgWebApp.initDataUnsafe.start_param;
+                if (referrerId && referrerId !== state.userId && !state.referredBy) {
+                    state.referredBy = referrerId;
+                    // Note: reward can only trigger once they do their first manual action (spin/task)
+                }
+            }
+
+            // Perform Periodic Resets (28-hour limit loops)
+            const now = Date.now();
+            const hour28 = 28 * 60 * 60 * 1000;
+            if (!state.lastSpinReset || now - state.lastSpinReset >= hour28) {
+                state.spinLimitRemaining = 100;
+                state.lastSpinReset = now;
+            }
+            if (!state.lastTaskReset || now - state.lastTaskReset >= hour28) {
+                state.tasksCompletedCount = 0;
+                state.lastTaskReset = now;
+            }
+
+            saveState();
+            updateUI();
+        }
+
+        // Save State to LocalStorage
+        function saveState() {
+            localStorage.setItem('tg_mini_app_state_2026', JSON.stringify(state));
+        }
+
+        // Update Global Displays
+        function updateUI() {
+            document.getElementById('global-balance').innerText = Math.round(state.balance).toLocaleString();
+            document.getElementById('profile-name').innerText = state.firstName;
+            document.getElementById('profile-avatar').innerText = state.firstName ? state.firstName.charAt(0).toUpperCase() : "U";
+
+            // Update Page Home Variables
+            document.getElementById('auto-spin-count').innerText = `Rem: ${state.spinLimitRemaining}/100`;
+
+            // Update Tasks limit UI
+            document.getElementById('tasks-limit-view').innerText = `Rem: ${500 - state.tasksCompletedCount}/500`;
+
+            // Update Referral Variables
+            document.getElementById('referral-link').value = `https://t.me/BotName/app?startapp=${state.userId}`;
+            document.getElementById('ref-count').innerText = `${state.referralsCount} Users`;
+            document.getElementById('ref-earnings').innerText = `${state.referralEarnings} Coins`;
+
+            // Update Wallet Variables
+            document.getElementById('wallet-balance-num').innerText = Math.round(state.balance).toLocaleString();
+            const estBdt = (state.balance * 5) / 10000; // 10,000 Coins = 5 BDT logic
+            document.getElementById('estimated-bdt').innerText = `Estimated: ${estBdt.toFixed(2)} BDT`;
+
+            // Check Withdraw Criteria
+            const isRefPass = state.referralsCount >= 7;
+            const isAdsPass = state.withdrawCompletedAds >= 10;
+            const isCoinsPass = state.balance >= 10000000;
+
+            const elRef = document.getElementById('req-referral-status');
+            elRef.innerText = `${state.referralsCount}/7 ${isRefPass ? '(Passed)' : '(Failed)'}`;
+            elRef.className = isRefPass ? 'font-bold text-green-500' : 'font-bold text-red-500';
+
+            const elAds = document.getElementById('req-ads-status');
+            elAds.innerText = `${state.withdrawCompletedAds}/10 Tasks ${isAdsPass ? '(Passed)' : '(Failed)'}`;
+            elAds.className = isAdsPass ? 'font-bold text-green-500' : 'font-bold text-red-500';
+
+            const elCoins = document.getElementById('req-coins-status');
+            elCoins.innerText = isCoinsPass ? 'Yes' : 'No';
+            elCoins.className = isCoinsPass ? 'font-bold text-green-500' : 'font-bold text-red-500';
+
+            // Check Exchange Criteria
+            const isExchangeAdsPass = state.exchangeCompletedAds >= 5;
+            const elExAds = document.getElementById('req-exchange-ads-status');
+            elExAds.innerText = `${state.exchangeCompletedAds}/5 Tasks ${isExchangeAdsPass ? '(Passed)' : '(Failed)'}`;
+            elExAds.className = isExchangeAdsPass ? 'font-bold text-green-500' : 'font-bold text-red-500';
+        }
+
+        // Navigation (Dynamic Single Page Views)
+        function navigateTo(pageId) {
+            // Hide all pages
+            const pages = ['home', 'tasks', 'referral', 'wallet'];
+            pages.forEach(p => {
+                document.getElementById(`page-${p}`).classList.add('hidden');
+                document.getElementById(`nav-${p}`).classList.remove('active-nav-item', 'text-indigo-500');
+                document.getElementById(`nav-${p}`).classList.add('text-slate-400');
+            });
+
+            // Show active page
+            document.getElementById(`page-${pageId}`).classList.remove('hidden');
+            const activeNav = document.getElementById(`nav-${pageId}`);
+            activeNav.classList.add('active-nav-item', 'text-indigo-500');
+            activeNav.classList.remove('text-slate-400');
+
+            // Force dynamic drawing of wheel if switching back to Home
+            if (pageId === 'home') {
+                drawWheel();
+                renderDailyRewards();
+            }
+        }
+
+        // Popup Handlers
+        function openProfilePopup() {
+            document.getElementById('popup-user-id').innerText = state.userId;
+            document.getElementById('popup-join-date').innerText = state.joinDate;
+            document.getElementById('popup-total-coins').innerText = Math.round(state.totalEarned).toLocaleString();
+            document.getElementById('profile-popup').classList.remove('hidden');
+        }
+
+        function closeProfilePopup() {
+            document.getElementById('profile-popup').classList.add('hidden');
+        }
+
+        // Custom alert logic
+        let alertCallback = null;
+        function showCustomAlert(msg, icon = "💡") {
+            document.getElementById('alert-message').innerText = msg;
+            document.getElementById('alert-icon').innerText = icon;
+            document.getElementById('custom-alert-popup').classList.remove('hidden');
+        }
+
+        function closeCustomAlert() {
+            document.getElementById('custom-alert-popup').classList.add('hidden');
+        }
+
+        // Safe dynamic script wrapper to play an Ad (Adsgram with Simulation fallback)
+        function runAd() {
+            return new Promise((resolve) => {
+                if (adsgramController) {
+                    adsgramController.show().then((result) => {
+                        resolve(true);
+                    }).catch((err) => {
+                        console.warn("Adsgram failed, using Simulated Ad Popup instead.");
+                        showSimulatedAdModal(resolve);
+                    });
+                } else {
+                    showSimulatedAdModal(resolve);
+                }
+            });
+        }
+
+        // Double Ad Loader Wrapper (Play back-to-back 2 Ads)
+        async function runDoubleAd() {
+            document.getElementById('ad-global-loader').classList.remove('hidden');
+            document.getElementById('ad-global-loader-text').innerText = "Playing Ad 1 of 2...";
+            await runAd();
+            document.getElementById('ad-global-loader-text').innerText = "Playing Ad 2 of 2...";
+            await runAd();
+            document.getElementById('ad-global-loader').classList.add('hidden');
+        }
+
+        // Simulated Ad Modal logic
+        function showSimulatedAdModal(onComplete) {
+            const modal = document.getElementById('ad-modal');
+            const timerText = document.getElementById('ad-timer');
+            const progressBar = document.getElementById('ad-progress-bar');
+            
+            modal.classList.remove('hidden');
+            let duration = 5; // 5 second timer simulation
+            let count = duration;
+            
+            timerText.innerText = `${count}s`;
+            progressBar.style.width = '100%';
+
+            const interval = setInterval(() => {
+                count--;
+                timerText.innerText = `${count}s`;
+                const progressPercent = (count / duration) * 100;
+                progressBar.style.width = `${progressPercent}%`;
+
+                if (count <= 0) {
+                    clearInterval(interval);
+                    modal.classList.add('hidden');
+                    onComplete(true);
+                }
+            }, 1000);
+        }
+
+        // Dynamic Referral Action Trigger (Award referee's referrer when they spin or complete a task)
+        function checkAndTriggerFirstActionReferralAward() {
+            if (state.referredBy && !state.hasReferredFirstAction) {
+                state.hasReferredFirstAction = true;
+                // Since this is a simulated Local App environment, we will trigger simulated balance additions.
+                // In production, this would communicate with your webhook or backend logic.
+                saveState();
+            }
+        }
+
+        // ==================== MANUAL WHEEL SPIN LOGIC ====================
+        const segments = [50, 70, 90, 100, 120, 140, 150, "Try Again"];
+        const segmentColors = ['#4f46e5', '#1e293b', '#6366f1', '#334155', '#818cf8', '#475569', '#3f3f46', '#18181b'];
+        let currentRotation = 0;
+        let isSpinning = false;
+        let pendingRewardIndex = null;
+        let manualSpinCount = 0; // trackers in current session
+
+        function drawWheel() {
+            const canvas = document.getElementById('wheel-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const numSegments = segments.length;
+            const radius = canvas.width / 2;
+            const arcSize = (2 * Math.PI) / numSegments;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < numSegments; i++) {
+                const angle = i * arcSize;
+                ctx.beginPath();
+                ctx.fillStyle = segmentColors[i];
+                ctx.moveTo(radius, radius);
+                ctx.arc(radius, radius, radius, angle, angle + arcSize);
+                ctx.lineTo(radius, radius);
+                ctx.fill();
+
+                // Draw Text
+                ctx.save();
+                ctx.translate(radius, radius);
+                ctx.rotate(angle + arcSize / 2);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#f8fafc';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillText(segments[i], radius - 15, 5);
+                ctx.restore();
+            }
+        }
+
+        async function spinManual() {
+            if (isSpinning) return;
+            
+            // Limit check
+            if (state.spinLimitRemaining <= 0) {
+                showCustomAlert("You reached your limit of 100 auto-spins in 28 hours.", "⏳");
+                return;
+            }
+
+            // 1st spin is free, 2nd onward requires ads before spinning
+            if (manualSpinCount > 0) {
+                showCustomAlert("Watch short ad before spin starts", "🎬");
+                await runAd();
+            }
+
+            isSpinning = true;
+            document.getElementById('btn-spin-manual').disabled = true;
+
+            // Enforce realistic winning index (wins 50, 70, 90, 100 -> segment index 0, 1, 2, 3)
+            const winningIndices = [0, 1, 2, 3];
+            const randomIndex = winningIndices[Math.floor(Math.random() * winningIndices.length)];
+            pendingRewardIndex = randomIndex;
+
+            // Rotation mathematics
+            const arcDeg = 360 / segments.length;
+            const targetRotation = 360 * 5 - (randomIndex * arcDeg) - (arcDeg / 2);
+            currentRotation += targetRotation;
+
+            const canvas = document.getElementById('wheel-canvas');
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+            canvas.style.transition = 'transform 4s cubic-bezier(0.25, 0.1, 0.25, 1)';
+
+            setTimeout(() => {
+                isSpinning = false;
+                manualSpinCount++;
+                document.getElementById('btn-spin-manual').classList.add('hidden');
+                document.getElementById('btn-claim-manual').classList.remove('hidden');
+                
+                const winAmount = segments[pendingRewardIndex];
+                showCustomAlert(`You won ${winAmount} Coins! Click Claim below.`, "🎉");
+                checkAndTriggerFirstActionReferralAward();
+            }, 4100);
+        }
+
+        async function claimManual() {
+            const btnClaim = document.getElementById('btn-claim-manual');
+            btnClaim.disabled = true;
+            
+            // Click Claim triggers simulated Adsgram redirect
+            showCustomAlert("Verifying claim with partner ads...", "📡");
+            await runAd();
+
+            const reward = segments[pendingRewardIndex];
+            if (typeof reward === 'number') {
+                state.balance += reward;
+                state.totalEarned += reward;
+            }
+
+            state.spinLimitRemaining = Math.max(0, state.spinLimitRemaining - 1);
+            saveState();
+            updateUI();
+
+            document.getElementById('btn-spin-manual').classList.remove('hidden');
+            document.getElementById('btn-spin-manual').disabled = false;
+            btnClaim.classList.add('hidden');
+            btnClaim.disabled = false;
+
+            showCustomAlert("Success! Coins added to your wallet.", "✅");
+        }
+
+        // ==================== AUTO WHEEL SPIN LOGIC ====================
+        let isAutoSpinningLoop = false;
+
+        async function startAutoSpin() {
+            if (state.spinLimitRemaining <= 0) {
+                showCustomAlert("Auto Spin Limit exhausted. Try again later.", "⏳");
+                return;
+            }
+
+            isAutoSpinningLoop = true;
+            document.getElementById('btn-auto-spin-start').disabled = true;
+            document.getElementById('btn-auto-spin-start').classList.add('opacity-50');
+            document.getElementById('btn-auto-spin-stop').disabled = false;
+            document.getElementById('btn-auto-spin-stop').classList.remove('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
+            document.getElementById('btn-auto-spin-stop').classList.add('bg-red-600', 'text-white', 'hover:bg-red-500');
+
+            triggerNextAutoSpinCycle();
+        }
+
+        function stopAutoSpin() {
+            isAutoSpinningLoop = false;
+            document.getElementById('btn-auto-spin-start').disabled = false;
+            document.getElementById('btn-auto-spin-start').classList.remove('opacity-50');
+            document.getElementById('btn-auto-spin-stop').disabled = true;
+            document.getElementById('btn-auto-spin-stop').classList.add('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
+            document.getElementById('btn-auto-spin-stop').classList.remove('bg-red-600', 'text-white', 'hover:bg-red-500');
+            showCustomAlert("Auto Spin stopped.", "🛑");
+        }
+
+        async function triggerNextAutoSpinCycle() {
+            if (!isAutoSpinningLoop) return;
+            
+            if (state.spinLimitRemaining <= 0) {
+                stopAutoSpin();
+                showCustomAlert("Limit of 100 auto-spins in 28 hours reached.", "🏁");
+                return;
+            }
+
+            // Before spin: plays 2 ads back-to-back
+            await runDoubleAd();
+
+            if (!isAutoSpinningLoop) return; // double check if user clicked stop during ads
+
+            // Calculate auto win
+            const winningIndices = [0, 1, 2, 3];
+            const randomIndex = winningIndices[Math.floor(Math.random() * winningIndices.length)];
+            const winAmount = segments[randomIndex];
+
+            const arcDeg = 360 / segments.length;
+            const targetRotation = 360 * 5 - (randomIndex * arcDeg) - (arcDeg / 2);
+            currentRotation += targetRotation;
+
+            const canvas = document.getElementById('wheel-canvas');
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+            canvas.style.transition = 'transform 4s cubic-bezier(0.25, 0.1, 0.25, 1)';
+
+            setTimeout(() => {
+                if (typeof winAmount === 'number') {
+                    state.balance += winAmount;
+                    state.totalEarned += winAmount;
+                }
+                state.spinLimitRemaining = Math.max(0, state.spinLimitRemaining - 1);
+                saveState();
+                updateUI();
+                
+                checkAndTriggerFirstActionReferralAward();
+
+                // Repeat sequence if running
+                if (isAutoSpinningLoop) {
+                    setTimeout(() => {
+                        triggerNextAutoSpinCycle();
+                    }, 1000);
+                }
+            }, 4100);
+        }
+
+        // ==================== DAILY REWARD LOGIC ====================
+        const dailyRewards = [10, 20, 30, 50, 70, 90, 100];
+
+        function renderDailyRewards() {
+            const grid = document.getElementById('daily-rewards-grid');
+            grid.innerHTML = "";
+
+            // Calculate Day status
+            const now = Date.now();
+            let isClaimedToday = false;
+
+            if (state.lastDailyClaim) {
+                const lastClaimDate = new Date(state.lastDailyClaim).getUTCDate();
+                const todayDate = new Date().getUTCDate();
+                if (lastClaimDate === todayDate) {
+                    isClaimedToday = true;
+                }
+            }
+
+            for (let i = 0; i < 7; i++) {
+                const dayNum = i + 1;
+                const amt = dailyRewards[i];
+                let bgClass = "bg-slate-900 border-slate-800";
+                let textClass = "text-slate-400";
+
+                if (dayNum < state.dailyDay) {
+                    bgClass = "bg-green-950/40 border-green-700/50";
+                    textClass = "text-green-400";
+                } else if (dayNum === state.dailyDay && !isClaimedToday) {
+                    bgClass = "bg-indigo-950/50 border-indigo-500 animate-pulse";
+                    textClass = "text-indigo-300";
+                } else if (dayNum === state.dailyDay && isClaimedToday) {
+                    bgClass = "bg-green-950/40 border-green-700/50";
+                    textClass = "text-green-400";
+                }
+
+                grid.innerHTML += `
+                    <div class="p-2 rounded-xl border ${bgClass} text-center space-y-1">
+                        <p class="text-[9px] uppercase tracking-wider font-semibold">Day ${dayNum}</p>
+                        <p class="text-xs font-bold ${textClass}">🪙 ${amt}</p>
+                    </div>
+                `;
+            }
+
+            const btn = document.getElementById('btn-daily-reward');
+            if (isClaimedToday) {
+                btn.innerText = "Already Claimed Today";
+                btn.disabled = true;
+                btn.className = "w-full bg-slate-700 text-slate-400 font-bold py-2.5 rounded-xl text-sm transition cursor-not-allowed";
+            } else {
+                btn.innerText = `Claim Day ${state.dailyDay} Reward`;
+                btn.disabled = false;
+                btn.className = "w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-2.5 rounded-xl text-sm transition transform active:scale-95";
+            }
+        }
+
+        async function claimDaily() {
+            showCustomAlert("Verifying daily login reward...", "📅");
+            await runAd();
+
+            const reward = dailyRewards[state.dailyDay - 1];
+            state.balance += reward;
+            state.totalEarned += reward;
+            state.lastDailyClaim = Date.now();
+
+            // Progress standard 7 day loop
+            if (state.dailyDay >= 7) {
+                state.dailyDay = 1;
+            } else {
+                state.dailyDay++;
+            }
+
+            saveState();
+            updateUI();
+            renderDailyRewards();
+            showCustomAlert(`Day reward of ${reward} coins claimed!`, "✅");
+        }
+
+        // ==================== TASKS PAGE LOGIC ====================
+        async function startSingleAdTask() {
+            if (state.tasksCompletedCount >= 500) {
+                showCustomAlert("Max task limit reached! Resets every 28 hours.", "⏳");
+                return;
+            }
+
+            showCustomAlert("Streaming video ad content...", "🎬");
+            await runAd();
+
+            state.balance += 70;
+            state.totalEarned += 70;
+            state.tasksCompletedCount++;
+            saveState();
+            updateUI();
+
+            checkAndTriggerFirstActionReferralAward();
+            showCustomAlert("Task Completed successfully! +70 Coins added.", "✅");
+        }
+
+        let isAutoTaskRunning = false;
+        async function toggleAutoTask() {
+            const btn = document.getElementById('btn-auto-task-toggle');
+            const progressBox = document.getElementById('auto-task-progress-box');
+            const progressBar = document.getElementById('auto-task-progress-bar');
+            const progressText = document.getElementById('auto-task-status-text');
+
+            if (isAutoTaskRunning) {
+                isAutoTaskRunning = false;
+                btn.innerText = "Start Auto";
+                btn.className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-4 rounded-lg text-xs transition";
+                progressBox.classList.add('hidden');
+                return;
+            }
+
+            if (state.tasksCompletedCount >= 500) {
+                showCustomAlert("Max limit reached.", "⏳");
+                return;
+            }
+
+            isAutoTaskRunning = true;
+            btn.innerText = "STOP";
+            btn.className = "bg-red-600 hover:bg-red-500 text-white font-bold py-1.5 px-4 rounded-lg text-xs transition";
+            progressBox.classList.remove('hidden');
+
+            runAutoTaskLoop(progressBar, progressText);
+        }
+
+        async function runAutoTaskLoop(bar, txt) {
+            if (!isAutoTaskRunning) return;
+
+            if (state.tasksCompletedCount >= 500) {
+                toggleAutoTask();
+                showCustomAlert("All 500 daily tasks completed!", "🏆");
+                return;
+            }
+
+            txt.innerText = "Playing Ad 1 of 2...";
+            bar.style.width = "20%";
+            await runAd();
+
+            if (!isAutoTaskRunning) return;
+
+            txt.innerText = "Playing Ad 2 of 2...";
+            bar.style.width = "60%";
+            await runAd();
+
+            if (!isAutoTaskRunning) return;
+
+            bar.style.width = "100%";
+            txt.innerText = "Claiming rewards...";
+
+            state.balance += 70;
+            state.totalEarned += 70;
+            state.tasksCompletedCount++;
+            saveState();
+            updateUI();
+
+            checkAndTriggerFirstActionReferralAward();
+
+            setTimeout(() => {
+                if (isAutoTaskRunning) {
+                    bar.style.width = "0%";
+                    runAutoTaskLoop(bar, txt);
+                }
+            }, 1000);
+        }
+
+        // ==================== REFERRAL PAGE LOGIC ====================
+        function copyReferralLink() {
+            const linkVal = document.getElementById('referral-link');
+            linkVal.select();
+            linkVal.setSelectionRange(0, 99999); // For mobile devices
+            
+            try {
+                navigator.clipboard.writeText(linkVal.value);
+                showCustomAlert("Referral link copied to clipboard!", "📋");
+            } catch (err) {
+                // Fallback copy
+                showCustomAlert("Failed to copy link. Please manually copy.", "❌");
+            }
+        }
+
+        // Simulator utility to test active joiner triggers
+        function simulateReferralActivity() {
+            state.referralsCount++;
+            state.referralEarnings += 400;
+            state.balance += 400;
+            state.totalEarned += 400;
+            saveState();
+            updateUI();
+            showCustomAlert("Simulated referral successfully completed their first spin. +400 coins added!", "✅");
+        }
+
+        // ==================== WALLET PAGE LOGIC ====================
+        let activeWalletTab = 'withdraw';
+        let selectedWithdrawMethod = 'bkash';
+
+        function setWalletTab(tab) {
+            activeWalletTab = tab;
+            const tabW = document.getElementById('tab-withdraw');
+            const tabE = document.getElementById('tab-exchange');
+            const paneW = document.getElementById('pane-withdraw');
+            const paneE = document.getElementById('pane-exchange');
+
+            if (tab === 'withdraw') {
+                tabW.classList.add('text-slate-200', 'border-indigo-500');
+                tabW.classList.remove('text-slate-400', 'border-transparent');
+                tabE.classList.add('text-slate-400', 'border-transparent');
+                tabE.classList.remove('text-slate-200', 'border-indigo-500');
+                paneW.classList.remove('hidden');
+                paneE.classList.add('hidden');
+            } else {
+                tabE.classList.add('text-slate-200', 'border-indigo-500');
+                tabE.classList.remove('text-slate-400', 'border-transparent');
+                tabW.classList.add('text-slate-400', 'border-transparent');
+                tabW.classList.remove('text-slate-200', 'border-indigo-500');
+                paneE.classList.remove('hidden');
+                paneW.classList.add('hidden');
+            }
+        }
+
+        function selectWithdrawMethod(method) {
+            selectedWithdrawMethod = method;
+            const methods = ['bkash', 'nagad', 'usdt'];
+            methods.forEach(m => {
+                const el = document.getElementById(`method-${m}`);
+                el.className = "py-2.5 px-3 rounded-xl border border-slate-700 bg-slate-900 text-slate-400 font-bold text-xs transition";
+            });
+
+            const activeBtn = document.getElementById(`method-${method}`);
+            activeBtn.className = "py-2.5 px-3 rounded-xl border border-indigo-600 bg-indigo-950/30 text-indigo-300 font-bold text-xs transition";
+
+            const label = document.getElementById('withdraw-label');
+            const input = document.getElementById('withdraw-address');
+
+            if (method === 'usdt') {
+                label.innerText = "USDT (TRC-20) Address";
+                input.placeholder = "T..." ;
+            } else {
+                label.innerText = `${method.charAt(0).toUpperCase() + method.slice(1)} Mobile Number`;
+                input.placeholder = "01XXXXXXXXX";
+            }
+        }
+
+        async function completeWithdrawAdTask() {
+            if (state.withdrawCompletedAds >= 10) {
+                showCustomAlert("You have already completed all 10 ad tasks for withdrawal verification.", "✅");
+                return;
+            }
+
+            // Watch dual ads (2 ads)
+            await runDoubleAd();
+
+            state.withdrawCompletedAds++;
+            saveState();
+            updateUI();
+            showCustomAlert(`Ad verification task ${state.withdrawCompletedAds}/10 completed successfully!`, "✅");
+        }
+
+        async function completeExchangeAdTask() {
+            if (state.exchangeCompletedAds >= 5) {
+                showCustomAlert("You have completed 5 ad tasks for exchange verification.", "✅");
+                return;
+            }
+
+            // Watch dual ads (2 ads)
+            await runDoubleAd();
+
+            state.exchangeCompletedAds++;
+            saveState();
+            updateUI();
+            showCustomAlert(`Ad verification task ${state.exchangeCompletedAds}/5 completed successfully!`, "✅");
+        }
+
+        function submitWithdrawal() {
+            const address = document.getElementById('withdraw-address').value;
+            if (!address || address.trim().length < 8) {
+                showCustomAlert("Please input a valid mobile number or wallet address.", "⚠️");
+                return;
+            }
+
+            // Enforce conditions
+            if (state.referralsCount < 7) {
+                showCustomAlert("Minimum of 7 active referrals required to submit withdrawal.", "⚠️");
+                return;
+            }
+
+            if (state.withdrawCompletedAds < 10) {
+                showCustomAlert("You must complete all 10 ad tasks prior to submitting a withdrawal request.", "⚠️");
+                return;
+            }
+
+            if (state.balance < 10000000) {
+                showCustomAlert("Insufficient coins. Minimum required is 10,000,000 coins.", "⚠️");
+                return;
+            }
+
+            // Success trigger
+            state.balance -= 10000000;
+            state.withdrawCompletedAds = 0; // reset tasks counter after successful submission
+            saveState();
+            updateUI();
+
+            showCustomAlert("Withdrawal Request Submitted Successfully! Admin will process your transfer in 24-48 hours.", "🎉");
+        }
+
+        function submitExchange() {
+            const inputAmt = parseInt(document.getElementById('exchange-amount-input').value);
+            if (isNaN(inputAmt) || inputAmt < 10000 || inputAmt % 10000 !== 0) {
+                showCustomAlert("Please input standard multiples of 10,000 coins.", "⚠️");
+                return;
+            }
+
+            if (state.balance < inputAmt) {
+                showCustomAlert("Insufficient coins to convert.", "⚠️");
+                return;
+            }
+
+            if (state.exchangeCompletedAds < 5) {
+                showCustomAlert("Please complete all 5 ad tasks to perform currency conversion.", "⚠️");
+                return;
+            }
+
+            // Deduct coins & reward converted simulation
+            state.balance -= inputAmt;
+            state.exchangeCompletedAds = 0; // reset
+            saveState();
+            updateUI();
+
+            const conversionAmt = (inputAmt * 5) / 10000;
+            showCustomAlert(`Exchange successful! Deducted ${inputAmt.toLocaleString()} coins. Converted into ${conversionAmt} BDT.`, "🎉");
+        }
+
+        // Initialize App on Document Load
+        window.onload = function() {
+            loadState();
+            navigateTo('home');
+        };
+    </script>
+</body>
+</html>
